@@ -295,7 +295,9 @@ async def get_stream_details(
     # attach the applied DSP to the streamdetails
     player = mass.players.get(streamdetails.queue_id)
 
-    streamdetails.dsp = get_dsp_details(mass, player)
+    if not player.provider.startswith("player_group"):
+        # player groups have no leader!
+        streamdetails.dsp = get_dsp_details(mass, player)
 
     if player and player.group_childs:
         # grouped playback, get DSP details for each player in the group
