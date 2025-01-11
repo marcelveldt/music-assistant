@@ -185,6 +185,26 @@ async def strip_silence(
     return stripped_data
 
 
+def get_dsp_details(mass: MusicAssistant, player: Player) -> DSPDetails:
+    """Return DSP details of single a player."""
+    dsp_config = mass.config.get_player_dsp_config(player.player_id)
+    dsp_state = DSPState.ENABLED if dsp_config.enabled else DSPState.DISABLED
+    if dsp_state == DSPState.ENABLED and is_grouping_preventing_dsp(player):
+        dsp_state = DSPState.DISABLED_BY_UNSUPPORTED_GROUP
+        dsp_config = DSPConfig(enabled=False)
+
+    # remove disabled filters
+    dsp_config.filters = [x for x in dsp_config.filters if x.enabled]
+
+    return DSPDetails(
+        state=dsp_state,
+        input_gain=dsp_config.input_gain,
+        filters=dsp_config.filters,
+        output_gain=dsp_config.output_gain,
+        output_limiter=dsp_config.output_limiter,
+    )
+
+
 async def get_stream_details(
     mass: MusicAssistant,
     queue_item: QueueItem,
@@ -273,24 +293,9 @@ async def get_stream_details(
     )
 
     # attach the applied DSP to the streamdetails
-    dsp_config = mass.config.get_player_dsp_config(streamdetails.queue_id)
     player = mass.players.get(streamdetails.queue_id)
 
-    dsp_state = DSPState.ENABLED if dsp_config.enabled else DSPState.DISABLED
-    if dsp_state == DSPState.ENABLED and is_grouping_preventing_dsp(player):
-        dsp_state = DSPState.DISABLED_BY_UNSUPPORTED_GROUP
-        dsp_config = DSPConfig(enabled=False)
-
-    # remove disabled filters
-    dsp_config.filters = [x for x in dsp_config.filters if x.enabled]
-
-    streamdetails.dsp = DSPDetails(
-        state=dsp_state,
-        input_gain=dsp_config.input_gain,
-        filters=dsp_config.filters,
-        output_gain=dsp_config.output_gain,
-        output_limiter=dsp_config.output_limiter,
-    )
+    streamdetails.dsp = get_dsp_details(mass, player)
 
     process_time = int((time.time() - time_start) * 1000)
     LOGGER.debug(
