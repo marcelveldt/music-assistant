@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import aiofiles
 from aiohttp import ClientTimeout
+from music_assistant_models.dsp import DSPConfig, DSPDetails, DSPState
 from music_assistant_models.enums import (
     ContentType,
     MediaType,
@@ -269,6 +270,26 @@ async def get_stream_details(
     streamdetails.target_loudness = player_settings.get_value(CONF_VOLUME_NORMALIZATION_TARGET)
     streamdetails.volume_normalization_mode = _get_normalization_mode(
         core_config, player_settings, streamdetails
+    )
+
+    # attach the applied DSP to the streamdetails
+    dsp_config = mass.config.get_player_dsp_config(streamdetails.queue_id)
+    player = mass.players.get(streamdetails.queue_id)
+
+    dsp_state = DSPState.ENABLED if dsp_config.enabled else DSPState.DISABLED
+    if dsp_state == DSPState.ENABLED and is_grouping_preventing_dsp(player):
+        dsp_state = DSPState.DISABLED_BY_UNSUPPORTED_GROUP
+        dsp_config = DSPConfig(enabled=False)
+
+    # remove disabled filters
+    dsp_config.filters = [x for x in dsp_config.filters if x.enabled]
+
+    streamdetails.dsp = DSPDetails(
+        state=dsp_state,
+        input_gain=dsp_config.input_gain,
+        filters=dsp_config.filters,
+        output_gain=dsp_config.output_gain,
+        output_limiter=dsp_config.output_limiter,
     )
 
     process_time = int((time.time() - time_start) * 1000)
