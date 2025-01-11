@@ -297,6 +297,14 @@ async def get_stream_details(
 
     streamdetails.dsp = get_dsp_details(mass, player)
 
+    if player and player.group_childs:
+        # grouped playback, get DSP details for each player in the group
+        dsp_grouped = {}
+        for child_id in player.group_childs:
+            if child_player := mass.players.get(child_id):
+                dsp_grouped[child_id] = get_dsp_details(mass, child_player)
+        streamdetails.dsp_grouped_childs = dsp_grouped
+
     process_time = int((time.time() - time_start) * 1000)
     LOGGER.debug(
         "retrieved streamdetails for %s in %s milliseconds",
