@@ -51,6 +51,7 @@ from .util import TimedAsyncGenerator, create_tempfile, detect_charset
 
 if TYPE_CHECKING:
     from music_assistant_models.config_entries import CoreConfig, PlayerConfig
+    from music_assistant_models.player import Player
     from music_assistant_models.player_queue import QueueItem
     from music_assistant_models.streamdetails import StreamDetails
 
@@ -861,6 +862,16 @@ def get_chunksize(
     return int((320000 / 8) * seconds)
 
 
+def is_grouping_preventing_dsp(player: Player) -> bool:
+    """Check if grouping is preventing DSP from being applied.
+
+    If this returns True, no DSP should be applied to the player.
+    """
+    is_grouped = bool(player.synced_to) or bool(player.group_childs)
+    multi_device_dsp_supported = PlayerFeature.MULTI_DEVICE_DSP in player.supported_features
+    return is_grouped and not multi_device_dsp_supported
+
+
 def get_player_filter_params(
     mass: MusicAssistant,
     player_id: str,
@@ -872,8 +883,7 @@ def get_player_filter_params(
     dsp = mass.config.get_player_dsp_config(player_id)
 
     if player := mass.players.get(player_id):
-        is_grouped = bool(player.synced_to) or bool(player.group_childs)
-        if is_grouped and PlayerFeature.MULTI_DEVICE_DSP not in player.supported_features:
+        if is_grouping_preventing_dsp(player):
             # We can not correctly apply DSP to a grouped player without multi-device DSP support,
             # so we disable it.
             dsp.enabled = False
