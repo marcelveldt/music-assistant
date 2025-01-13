@@ -294,18 +294,21 @@ async def get_stream_details(
 
     # attach the applied DSP to the streamdetails
     player = mass.players.get(streamdetails.queue_id)
+    dsp = {}
 
+    # player groups have no (explicit) leader since a player group has no audio output
     if not player.provider.startswith("player_group"):
-        # player groups have no leader!
-        streamdetails.dsp = get_dsp_details(mass, player)
+        details = get_dsp_details(mass, player)
+        details.is_leader = True
+        dsp[player.player_id] = details
 
     if player and player.group_childs:
         # grouped playback, get DSP details for each player in the group
-        dsp_grouped = {}
         for child_id in player.group_childs:
             if child_player := mass.players.get(child_id):
-                dsp_grouped[child_id] = get_dsp_details(mass, child_player)
-        streamdetails.dsp_grouped_childs = dsp_grouped
+                dsp[child_id] = get_dsp_details(mass, child_player)
+
+    streamdetails.dsp = dsp
 
     process_time = int((time.time() - time_start) * 1000)
     LOGGER.debug(
