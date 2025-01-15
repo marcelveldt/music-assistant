@@ -205,6 +205,28 @@ def get_dsp_details(mass: MusicAssistant, player: Player) -> DSPDetails:
     )
 
 
+def get_stream_dsp_details(
+    mass: MusicAssistant,
+    queue_id: str,
+) -> dict[str, DSPDetails]:
+    """Return DSP details of all players in the group, keyed by player_id."""
+    player = mass.players.get(queue_id)
+    dsp = {}
+
+    # player groups have no (explicit) leader since a player group has no audio output
+    if not player.provider.startswith("player_group"):
+        details = get_dsp_details(mass, player)
+        details.is_leader = True
+        dsp[player.player_id] = details
+
+    if player and player.group_childs:
+        # grouped playback, get DSP details for each player in the group
+        for child_id in player.group_childs:
+            if child_player := mass.players.get(child_id):
+                dsp[child_id] = get_dsp_details(mass, child_player)
+    return dsp
+
+
 async def get_stream_details(
     mass: MusicAssistant,
     queue_item: QueueItem,
@@ -292,23 +314,8 @@ async def get_stream_details(
         core_config, player_settings, streamdetails
     )
 
-    # attach the applied DSP to the streamdetails
-    player = mass.players.get(streamdetails.queue_id)
-    dsp = {}
-
-    # player groups have no (explicit) leader since a player group has no audio output
-    if not player.provider.startswith("player_group"):
-        details = get_dsp_details(mass, player)
-        details.is_leader = True
-        dsp[player.player_id] = details
-
-    if player and player.group_childs:
-        # grouped playback, get DSP details for each player in the group
-        for child_id in player.group_childs:
-            if child_player := mass.players.get(child_id):
-                dsp[child_id] = get_dsp_details(mass, child_player)
-
-    streamdetails.dsp = dsp
+    # attach the DSP details of all group members
+    streamdetails.dsp = get_stream_dsp_details(mass, streamdetails.queue_id)
 
     process_time = int((time.time() - time_start) * 1000)
     LOGGER.debug(
