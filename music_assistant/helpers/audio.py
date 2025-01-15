@@ -185,7 +185,7 @@ async def strip_silence(
     return stripped_data
 
 
-def get_dsp_details(mass: MusicAssistant, player: Player) -> DSPDetails:
+def get_player_dsp_details(mass: MusicAssistant, player: Player) -> DSPDetails:
     """Return DSP details of single a player."""
     dsp_config = mass.config.get_player_dsp_config(player.player_id)
     dsp_state = DSPState.ENABLED if dsp_config.enabled else DSPState.DISABLED
@@ -215,7 +215,7 @@ def get_stream_dsp_details(
 
     # player groups have no (explicit) leader since a player group has no audio output
     if not player.provider.startswith("player_group"):
-        details = get_dsp_details(mass, player)
+        details = get_player_dsp_details(mass, player)
         details.is_leader = True
         dsp[player.player_id] = details
 
@@ -223,7 +223,7 @@ def get_stream_dsp_details(
         # grouped playback, get DSP details for each player in the group
         for child_id in player.group_childs:
             if child_player := mass.players.get(child_id):
-                dsp[child_id] = get_dsp_details(mass, child_player)
+                dsp[child_id] = get_player_dsp_details(mass, child_player)
     return dsp
 
 
