@@ -57,7 +57,7 @@ from music_assistant.constants import (
     MASS_LOGO_ONLINE,
 )
 from music_assistant.helpers.api import api_command
-from music_assistant.helpers.audio import get_stream_details
+from music_assistant.helpers.audio import get_stream_details, get_stream_dsp_details
 from music_assistant.helpers.throttle_retry import BYPASS_THROTTLER
 from music_assistant.helpers.util import get_changed_keys
 from music_assistant.models.core_controller import CoreController
@@ -108,6 +108,7 @@ class CompareState(TypedDict):
     elapsed_time: int
     stream_title: str | None
     content_type: str | None
+    group_childs_count: int
 
 
 class PlayerQueuesController(CoreController):
@@ -962,6 +963,7 @@ class PlayerQueuesController(CoreController):
                 next_item_id=None,
                 elapsed_time=0,
                 stream_title=None,
+                group_childs_count=0,
             ),
         )
 
@@ -978,6 +980,7 @@ class PlayerQueuesController(CoreController):
             content_type=queue.current_item.streamdetails.audio_format.output_format_str
             if queue.current_item and queue.current_item.streamdetails
             else None,
+            group_childs_count=len(player.group_childs),
         )
         changed_keys = get_changed_keys(prev_state, new_state)
         # return early if nothing changed
@@ -998,6 +1001,14 @@ class PlayerQueuesController(CoreController):
             self._prev_states[queue_id] = new_state
         else:
             self._prev_states.pop(queue_id, None)
+
+        if "group_childs_count" in changed_keys:
+            # refresh DSP details since a player has been added/removed from the group
+            dsp = get_stream_dsp_details(self.mass, queue_id)
+            if queue.current_item and queue.current_item.streamdetails:
+                queue.current_item.streamdetails.dsp = dsp
+            if queue.next_item and queue.next_item.streamdetails:
+                queue.next_item.streamdetails.dsp = dsp
 
         # detect change in current index to report that a item has been played
         prev_item_id = prev_state["current_item_id"]
