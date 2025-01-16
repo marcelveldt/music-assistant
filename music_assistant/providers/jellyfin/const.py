@@ -14,6 +14,7 @@ DOMAIN: Final = "jellyfin"
 COLLECTION_TYPE_MOVIES: Final = "movies"
 COLLECTION_TYPE_MUSIC: Final = "music"
 COLLECTION_TYPE_TVSHOWS: Final = "tvshows"
+COLLECTION_TYPE_MUSIC_VIDEOS: Final = "musicvideos"
 
 CONF_CLIENT_DEVICE_ID: Final = "client_device_id"
 
@@ -60,7 +61,7 @@ MEDIA_SOURCE_KEY_PATH: Final = "Path"
 MEDIA_TYPE_AUDIO: Final = "Audio"
 MEDIA_TYPE_NONE: Final = ""
 
-SUPPORTED_COLLECTION_TYPES: Final = [COLLECTION_TYPE_MUSIC]
+SUPPORTED_COLLECTION_TYPES: Final = [COLLECTION_TYPE_MUSIC, COLLECTION_TYPE_MUSIC_VIDEOS]
 
 SUPPORTED_CONTAINER_FORMATS: Final = "ogg,flac,mp3,aac,mpeg,alac,wav,aiff,wma,m4a,m4b,dsf,opus,wv"
 

@@ -53,8 +53,10 @@ from .const import (
     ITEM_KEY_MEDIA_CODEC,
     ITEM_KEY_MEDIA_SOURCES,
     ITEM_KEY_MEDIA_STREAMS,
+    ITEM_KEY_MEDIA_TYPE,
     ITEM_KEY_NAME,
     ITEM_KEY_RUNTIME_TICKS,
+    SUPPORTED_COLLECTION_TYPES,
     SUPPORTED_CONTAINER_FORMATS,
     TRACK_FIELDS,
     UNKNOWN_ARTIST_MAPPING,
@@ -453,7 +455,15 @@ class JellyfinProvider(MusicProvider):
         jellyfin_track = await self._client.get_track(item_id)
         mimetype = self._media_mime_type(jellyfin_track)
         media_stream = jellyfin_track[ITEM_KEY_MEDIA_STREAMS][0]
-        url = self._client.audio_url(jellyfin_track[ITEM_KEY_ID], SUPPORTED_CONTAINER_FORMATS)
+        if jellyfin_track[ITEM_KEY_MEDIA_TYPE] == "Video":
+            for stream in jellyfin_track[ITEM_KEY_MEDIA_STREAMS]:
+                if stream.get(ITEM_KEY_MEDIA_CODEC) in SUPPORTED_CONTAINER_FORMATS:
+                    media_stream = stream
+                    break
+            # Since video, we need to transcode to audio (demux not supported through this Jellyfin endpoint)
+            url = self._client.audio_url(jellyfin_track[ITEM_KEY_ID], audio_codec='flac', transcoding_container='flac')
+        else:
+            url = self._client.audio_url(jellyfin_track[ITEM_KEY_ID], SUPPORTED_CONTAINER_FORMATS)
         if ITEM_KEY_MEDIA_CODEC in media_stream:
             content_type = ContentType.try_parse(media_stream[ITEM_KEY_MEDIA_CODEC])
         else:
@@ -463,7 +473,7 @@ class JellyfinProvider(MusicProvider):
             provider=self.instance_id,
             audio_format=AudioFormat(
                 content_type=content_type,
-                channels=jellyfin_track[ITEM_KEY_MEDIA_STREAMS][0][ITEM_KEY_MEDIA_CHANNELS],
+                channels=media_stream[ITEM_KEY_MEDIA_CHANNELS],
             ),
             stream_type=StreamType.HTTP,
             duration=int(
@@ -488,7 +498,7 @@ class JellyfinProvider(MusicProvider):
         libraries = response["Items"]
         result = []
         for library in libraries:
-            if ITEM_KEY_COLLECTION_TYPE in library and library[ITEM_KEY_COLLECTION_TYPE] in "music":
+            if ITEM_KEY_COLLECTION_TYPE in library and library[ITEM_KEY_COLLECTION_TYPE] in SUPPORTED_COLLECTION_TYPES:
                 result.append(library)
         return result
 
