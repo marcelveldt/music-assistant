@@ -1,0 +1,10 @@
+{
+  "type": "music",
+  "domain": "audiobookshelf",
+  "name": "Audiobookshelf",
+  "description": "Audiobookshelf (audiobookshelf.org) as audiobook and podcast provider",
+  "codeowners": [
+    "@fmunkes"
+  ],
+  "documentation": "https://music-assistant.io/music-providers/audiobookshelf"
+}
