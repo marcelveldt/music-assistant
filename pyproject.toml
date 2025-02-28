@@ -128,6 +128,7 @@ exclude = [
   '^music_assistant/providers/deezer/.*$',
   '^music_assistant/providers/dlna/.*$',
   '^music_assistant/providers/hass_players/.*$',
+  '^music_assistant/providers/nugs/.*$',
   '^music_assistant/providers/player_group/.*$',
   '^music_assistant/providers/podcastfeed/.*$',
   '^music_assistant/providers/qobuz/.*$',
