@@ -61,7 +61,9 @@ mass = "music_assistant.__main__:main"
 
 [tool.codespell]
 ignore-words-list = "provid,hass,followings,childs"
-skip = "*.js,*.svg"
+skip = """*.js,*.svg,\
+music_assistant/providers/itunes_podcasts/itunes_country_codes.json,\
+"""
 
 [tool.setuptools]
 include-package-data = true
